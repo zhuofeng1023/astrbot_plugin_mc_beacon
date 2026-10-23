@@ -19,8 +19,8 @@ FIELD_LABELS = {
     "lastBackup": "上次备份时间",
     "loopCount": "循环计数",
     "checksum": "校验和",
-    "playerCount": "在线玩家数量",
-    "playerNames": "在线玩家名称"
+    "playerCount": "玩家数量",
+    "playerNames": "玩家名单",
 }
 
 

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ snapshot.get('name', 'Server Dashboard') }}</title>
+    <style>
+        :root {
+            --bg-primary: #0f111a;
+            --bg-card: #1a1d2d;
+            --bg-input: #25293c;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-blue: #3b82f6;
+            --radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 24px 16px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-online {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+        }
+
+        .status-offline {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .info-value {
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .motd-box {
+            background: var(--bg-input);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            margin-top: 8px;
+        }
+
+        .progress-container {
+            margin-bottom: 12px;
+        }
+
+        .progress-container:last-child {
+            margin-bottom: 0;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+
+        .progress-track {
+            height: 6px;
+            background: var(--bg-input);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        .bar-green {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .bar-yellow {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+
+        .bar-red {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+
+        .bar-blue {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        }
+
+        .player-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .player-tag {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-secondary);
+            padding: 8px 0;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>{{ snapshot.get('name', 'Unknown Server') }}</h1>
+            {% if 'status' in snapshot %}
+            {% set is_online = snapshot.status.lower() in ['online', 'running', 'true', '1'] %}
+            <span class="status-badge {{ 'status-online' if is_online else 'status-offline' }}">
+                {{ '● 在线' if is_online else '● 离线' }}
+            </span>
+            {% endif %}
+        </div>
+
+        <!-- 基础信息 -->
+        {% if 'server_ip' in snapshot or 'server_port' in snapshot or 'motd' in snapshot %}
+        <div class="card">
+            <div class="card-title">📡 基础信息</div>
+            {% if 'server_ip' in snapshot %}
+            <div class="info-row">
+                <span class="info-label">连接地址</span>
+                <span class="info-value">{{ snapshot.server_ip }}{% if 'server_port' in snapshot %}:{{
+                    snapshot.server_port }}{% endif %}</span>
+            </div>
+            {% endif %}
+            {% if 'server_type' in snapshot %}
+            <div class="info-row">
+                <span class="info-label">服务端类型</span>
+                <span class="info-value">{{ snapshot.server_type }}</span>
+            </div>
+            {% endif %}
+            {% if 'motd' in snapshot and snapshot.motd %}
+            <div class="info-label" style="margin-bottom: 4px;">服务器公告</div>
+            <div class="motd-box">{{ snapshot.motd }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- 玩家信息 -->
+        {% set p_count = snapshot.get('online') if 'online' in snapshot else status_data.get('playerCount') %}
+        {% set p_max = snapshot.get('max_players') %}
+        {% set p_list = snapshot.get('players') if 'players' in snapshot else status_data.get('playerNames') %}
+
+        {% if p_count is not none or p_list %}
+        <div class="card">
+            <div class="card-title">👥 玩家状态</div>
+            {% if p_count is not none %}
+            <div class="progress-container">
+                <div class="progress-header">
+                    <span>在线人数</span>
+                    <span>{{ p_count }}{% if p_max is not none %} / {{ p_max }}{% endif %}</span>
+                </div>
+                {% if p_max is not none and p_max > 0 %}
+                {% set p_percent = (p_count | float / p_max | float * 100) | round %}
+                {% else %}
+                {% set p_percent = 0 %}
+                {% endif %}
+                <div class="progress-track">
+                    <div class="progress-bar bar-blue" style="width: {{ p_percent }}%;"></div>
+                </div>
+            </div>
+            {% endif %}
+            {% if p_list %}
+            <div class="info-label" style="margin-bottom: 4px;">当前玩家</div>
+            <div class="player-grid">
+                {% for player in p_list %}<span class="player-tag">{{ player }}</span>{% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- 系统性能 -->
+        {% if 'cpuLoad' in status_data or 'memoryLoad' in status_data or 'diskSpace' in status_data %}
+        <div class="card">
+            <div class="card-title">⚙️ 系统性能</div>
+            {% for key, label in [('cpuLoad', 'CPU 负载'), ('memoryLoad', '内存占用'), ('diskSpace', '磁盘空间')] %}
+            {% if key in status_data %}
+            {% set raw_val = status_data[key] | string | replace('%', '') %}
+            {% set val = raw_val | float %}
+            {% set bar_class = 'bar-green' if val < 50 else ('bar-yellow' if val < 80 else 'bar-red' ) %} <div
+                class="progress-container">
+                <div class="progress-header">
+                    <span>{{ label }}</span>
+                    <span>{{ val }}%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-bar {{ bar_class }}" style="width: {{ val }}%;"></div>
+                </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 底部时间 -->
+    {% if 'update_time' in snapshot %}
+    <div class="footer">数据更新于：{{ snapshot.update_time }}</div>
+    {% endif %}
+    </div>
+</body>
+
+</html>
