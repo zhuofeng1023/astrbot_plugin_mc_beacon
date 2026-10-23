@@ -46,13 +46,16 @@ async def fetch_status_api(api_url: str) -> dict | None:
     return None
 
 
-def format_status_section(data: dict | None) -> str:
-    """只输出接口里确实有值的字段，全为空时返回空串。"""
+def format_status_section(data: dict | None, display: dict | None = None) -> str:
+    """只输出接口里确实有值、且未被 display 关闭的字段，全为空时返回空串。"""
     if not data:
         return ""
 
+    display = display or {}
     lines: list[str] = []
     for key, label in FIELD_LABELS.items():
+        if not display.get(key, True):
+            continue
         value = data.get(key)
         if value is None or str(value).strip() == "":
             continue

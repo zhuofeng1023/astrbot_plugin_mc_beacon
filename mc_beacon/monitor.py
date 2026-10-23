@@ -4,37 +4,49 @@ from .models import ServerConfig, ServerSnapshot, ServerState
 from .server_status import format_status_section
 
 
-def _format_basic_info(snapshot: ServerSnapshot) -> str:
-    """基础信息段：名称、在线状态、地址、类型、版本、MOTD、更新时间。"""
-    lines = [
-        f"服务器: {snapshot.name}",
-        f"状态: {'在线' if snapshot.status == 'online' else '离线'}",
-        f"地址: {snapshot.server_ip}:{snapshot.server_port}",
-        f"类型: {'基岩版' if snapshot.server_type == 'bedrock' else 'Java版'}",
-        f"版本: {snapshot.version}",
+def _format_basic_info(snapshot: ServerSnapshot, display: dict) -> str:
+    """基础信息段：每行按 display 开关决定是否输出。"""
+    candidates = [
+        ("server_name", f"服务器: {snapshot.name}"),
+        ("status", f"状态: {'在线' if snapshot.status == 'online' else '离线'}"),
+        ("address", f"地址: {snapshot.server_ip}:{snapshot.server_port}"),
+        ("server_type", f"类型: {'基岩版' if snapshot.server_type == 'bedrock' else 'Java版'}"),
+        ("version", f"版本: {snapshot.version}"),
     ]
+    lines = [text for key, text in candidates if display.get(key, True)]
 
     motd = snapshot.motd.strip()
-    if motd:
+    if motd and display.get("motd", True):
         lines.append(f"MOTD: {motd[:120]}{'...' if len(motd) > 120 else ''}")
 
-    lines.append(f"更新时间: {snapshot.update_time}")
+    if display.get("update_time", True):
+        lines.append(f"更新时间: {snapshot.update_time}")
     return "\n".join(lines)
 
 
-def _format_player_section(snapshot: ServerSnapshot) -> str:
-    """在线玩家段：人数与名单，名单为空时明确写出无人在线。"""
-    count = f"{snapshot.online}/{snapshot.max_players}" if snapshot.max_players > 0 else str(snapshot.online)
-    names = ", ".join(snapshot.players) if snapshot.players else "无人在线"
-    return f"在线玩家\n  在线人数: {count}\n  玩家名单: {names}"
+def _format_player_section(snapshot: ServerSnapshot, display: dict) -> str:
+    """在线玩家段：人数与名单各自受开关控制，全部关闭时整段省略。"""
+    lines: list[str] = []
+    if display.get("online_count", True):
+        count = f"{snapshot.online}/{snapshot.max_players}" if snapshot.max_players > 0 else str(snapshot.online)
+        lines.append(f"  在线人数: {count}")
+    if display.get("player_list", True):
+        names = ", ".join(snapshot.players) if snapshot.players else "无人在线"
+        lines.append(f"  玩家名单: {names}")
+    return "在线玩家\n" + "\n".join(lines) if lines else ""
 
 
-def compose_server_block(snapshot: ServerSnapshot | None, status_data: dict | None) -> str:
+def compose_server_block(snapshot: ServerSnapshot | None, status_data: dict | None, display: dict | None = None) -> str:
     """按「基础信息 -> 服务器状态 -> 在线玩家」拼出一台服务器的文本块。"""
     if snapshot is None:
         return "获取服务器数据失败"
 
-    parts = [_format_basic_info(snapshot), format_status_section(status_data), _format_player_section(snapshot)]
+    display = display or {}
+    parts = [
+        _format_basic_info(snapshot, display),
+        format_status_section(status_data, display),
+        _format_player_section(snapshot, display),
+    ]
     return "\n\n".join(part for part in parts if part)
 
 

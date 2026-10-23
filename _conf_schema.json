@@ -16,6 +16,103 @@
     "type": "bool",
     "default": true
   },
+  "display": {
+    "description": "显示内容开关",
+    "type": "object",
+    "hint": "控制「/查询」与群通知中每个字段是否展示，默认全部开启。选项名与自建状态接口的字段名一致。",
+    "items": {
+      "server_name": {
+        "description": "显示服务器名称",
+        "type": "bool",
+        "default": true
+      },
+      "status": {
+        "description": "显示在线状态",
+        "type": "bool",
+        "default": true
+      },
+      "address": {
+        "description": "显示服务器地址",
+        "type": "bool",
+        "default": true
+      },
+      "server_type": {
+        "description": "显示服务器类型（Java/基岩）",
+        "type": "bool",
+        "default": true
+      },
+      "version": {
+        "description": "显示版本",
+        "type": "bool",
+        "default": true
+      },
+      "motd": {
+        "description": "显示 MOTD",
+        "type": "bool",
+        "default": true
+      },
+      "update_time": {
+        "description": "显示更新时间",
+        "type": "bool",
+        "default": true
+      },
+      "online_count": {
+        "description": "显示在线人数",
+        "type": "bool",
+        "default": true
+      },
+      "player_list": {
+        "description": "显示玩家名单",
+        "type": "bool",
+        "default": true
+      },
+      "serverVersion": {
+        "description": "显示服务端版本",
+        "type": "bool",
+        "default": true
+      },
+      "gameVersion": {
+        "description": "显示游戏版本",
+        "type": "bool",
+        "default": true
+      },
+      "serverTime": {
+        "description": "显示服务器时间",
+        "type": "bool",
+        "default": true
+      },
+      "cpuLoad": {
+        "description": "显示 CPU 负载",
+        "type": "bool",
+        "default": true
+      },
+      "memoryLoad": {
+        "description": "显示内存占用",
+        "type": "bool",
+        "default": true
+      },
+      "diskSpace": {
+        "description": "显示磁盘空间",
+        "type": "bool",
+        "default": true
+      },
+      "lastBackup": {
+        "description": "显示上次备份时间",
+        "type": "bool",
+        "default": true
+      },
+      "loopCount": {
+        "description": "显示循环计数",
+        "type": "bool",
+        "default": true
+      },
+      "checksum": {
+        "description": "显示校验和",
+        "type": "bool",
+        "default": true
+      }
+    }
+  },
   "server_entries": {
     "description": "多服务器配置列表",
     "type": "template_list",

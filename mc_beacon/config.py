@@ -95,3 +95,34 @@ def load_servers_from_config(config: AstrBotConfig, global_check_interval: int) 
 
 def build_initial_states(servers: list[ServerConfig]) -> dict[str, ServerState]:
     return {server.key: ServerState() for server in servers}
+
+
+# 展示开关默认值；键名与 _conf_schema.json 的 display.items 一致
+DISPLAY_DEFAULTS = {
+    "server_name": True,
+    "status": True,
+    "address": True,
+    "server_type": True,
+    "version": True,
+    "motd": True,
+    "update_time": True,
+    "online_count": True,
+    "player_list": True,
+    "serverVersion": True,
+    "gameVersion": True,
+    "serverTime": True,
+    "cpuLoad": True,
+    "memoryLoad": True,
+    "diskSpace": True,
+    "lastBackup": True,
+    "loopCount": True,
+    "checksum": True,
+}
+
+
+def load_display_options(config: AstrBotConfig) -> dict[str, bool]:
+    """读 display 分组；缺省或非法值一律按展示处理。"""
+    raw = config.get("display", {})
+    if not isinstance(raw, dict):
+        raw = {}
+    return {key: safe_bool(raw.get(key, default), default) for key, default in DISPLAY_DEFAULTS.items()}

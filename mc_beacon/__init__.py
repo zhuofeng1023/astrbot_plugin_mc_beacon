@@ -3,6 +3,7 @@
 from .clients import fetch_status
 from .config import (
     build_initial_states,
+    load_display_options,
     load_servers_from_config,
     parse_target_group,
     safe_bool,
@@ -17,6 +18,7 @@ __all__ = [
     "fetch_status",
     "fetch_status_api",
     "build_initial_states",
+    "load_display_options",
     "load_servers_from_config",
     "parse_target_group",
     "safe_bool",

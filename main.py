@@ -15,6 +15,7 @@ from .mc_beacon import (
     detect_changes,
     fetch_status,
     fetch_status_api,
+    load_display_options,
     load_servers_from_config,
     notify_group,
     parse_target_group,
@@ -33,6 +34,7 @@ class MCBeaconPlugin(Star):
 
         self.target_group = parse_target_group(config.get("target_group"))
         self.global_check_interval = max(5, safe_int(config.get("check_interval", 45), 45))
+        self.display = load_display_options(config)
         self.servers = load_servers_from_config(config, self.global_check_interval)
         self.server_states = build_initial_states(self.servers)
         self.server_locks = {server.key: asyncio.Lock() for server in self.servers}
@@ -61,7 +63,7 @@ class MCBeaconPlugin(Star):
     async def _server_detail(self, server: ServerConfig, snapshot: ServerSnapshot | None) -> str:
         """拼装纯文本详情：已有查询结果 + 自建状态接口（未配置就跳过）。"""
         status_data = await fetch_status_api(server.status_api_url)
-        return compose_server_block(snapshot, status_data)
+        return compose_server_block(snapshot, status_data, self.display)
 
     async def monitor_loop(self):
         try:
