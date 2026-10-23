@@ -24,20 +24,8 @@ def _format_basic_info(snapshot: ServerSnapshot, display: dict) -> str:
     return "\n".join(lines)
 
 
-def _format_player_section(snapshot: ServerSnapshot, display: dict) -> str:
-    """在线玩家段：人数与名单各自受开关控制，全部关闭时整段省略。"""
-    lines: list[str] = []
-    if display.get("online_count", True):
-        count = f"{snapshot.online}/{snapshot.max_players}" if snapshot.max_players > 0 else str(snapshot.online)
-        lines.append(f"  在线人数: {count}")
-    if display.get("player_list", True):
-        names = ", ".join(snapshot.players) if snapshot.players else "无人在线"
-        lines.append(f"  玩家名单: {names}")
-    return "在线玩家\n" + "\n".join(lines) if lines else ""
-
-
 def compose_server_block(snapshot: ServerSnapshot | None, status_data: dict | None, display: dict | None = None) -> str:
-    """按「基础信息 -> 服务器状态 -> 在线玩家」拼出一台服务器的文本块。"""
+    """按「基础信息 -> 服务器状态」拼出一台服务器的文本块。"""
     if snapshot is None:
         return "获取服务器数据失败"
 
@@ -45,7 +33,6 @@ def compose_server_block(snapshot: ServerSnapshot | None, status_data: dict | No
     parts = [
         _format_basic_info(snapshot, display),
         format_status_section(status_data, display),
-        _format_player_section(snapshot, display),
     ]
     return "\n\n".join(part for part in parts if part)
 
