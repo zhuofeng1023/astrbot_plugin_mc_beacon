@@ -1,0 +1,6 @@
+name: astrbot_plugin_mc_beacon
+desc: Minecraft 多服务器状态监控 —— 逐台巡检服务器状态，检测到变化时向指定群推送纯文本通知。
+version: 0.3.1
+author: zhuofeng
+display_name: MC 服务器监控
+astrbot_version: ">=4.10.4"

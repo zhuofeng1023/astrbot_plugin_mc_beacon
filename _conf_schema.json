@@ -1,0 +1,68 @@
+{
+  "target_group": {
+    "description": "接收通知的QQ群号",
+    "type": "string",
+    "hint": "只支持一个群统一接收所有服务器通知，例如 123456789。",
+    "default": ""
+  },
+  "check_interval": {
+    "description": "全局默认检测间隔（秒）",
+    "type": "int",
+    "hint": "当某台服务器未单独填写检测间隔时，使用这里的值。建议 30-60 秒。",
+    "default": 45
+  },
+  "enable_auto_monitor": {
+    "description": "插件加载后自动启动监控",
+    "type": "bool",
+    "default": true
+  },
+  "server_entries": {
+    "description": "多服务器配置列表",
+    "type": "template_list",
+    "hint": "每一项是一台需要监控的 Minecraft 服务器。",
+    "templates": {
+      "minecraft_server": {
+        "name": "服务器配置项",
+        "hint": "添加一台需要监控的 Minecraft 服务器。",
+        "items": {
+          "server_name": {
+            "description": "服务器名称",
+            "type": "string",
+            "hint": "通知与查询结果中展示的名称；留空时回退为地址。",
+            "default": ""
+          },
+          "server_ip": {
+            "description": "服务器地址",
+            "type": "string",
+            "hint": "支持域名或 IP，例如 play.example.com。",
+            "default": ""
+          },
+          "server_port": {
+            "description": "服务器端口",
+            "type": "int",
+            "default": 25565
+          },
+          "server_type": {
+            "description": "服务器类型",
+            "type": "string",
+            "hint": "填写 java 或 bedrock。",
+            "default": "java"
+          },
+          "check_interval": {
+            "description": "单服务器检测间隔（秒）",
+            "type": "int",
+            "hint": "填 0 或负数时将自动回退到全局默认值。",
+            "default": 45
+          },
+          "status_api_url": {
+            "description": "该服务器自建的状态接口（可选）",
+            "type": "string",
+            "hint": "填写后查询与通知会附带该接口返回的主机指标；留空则只展示 Minecraft 查询结果。",
+            "default": ""
+          }
+        }
+      }
+    },
+    "default": []
+  }
+}
