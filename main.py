@@ -1,29 +1,26 @@
 """插件入口：读取配置、跑监控循环、提供 /查询 指令，状态变化时发纯文本群通知。"""
 
 import asyncio
-import os
-import sys
 
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 
-PLUGIN_DIR = os.path.dirname(os.path.abspath(__file__))
-if PLUGIN_DIR not in sys.path:
-    sys.path.insert(0, PLUGIN_DIR)
-
-from mc_beacon.clients import fetch_status
-from mc_beacon.config import (
+from .mc_beacon import (
+    ServerConfig,
+    ServerSnapshot,
+    ServerState,
     build_initial_states,
+    compose_server_block,
+    detect_changes,
+    fetch_status,
+    fetch_status_api,
     load_servers_from_config,
+    notify_group,
     parse_target_group,
     safe_bool,
     safe_int,
 )
-from mc_beacon.delivery import notify_group
-from mc_beacon.models import ServerConfig, ServerSnapshot, ServerState
-from mc_beacon.monitor import compose_server_block, detect_changes
-from mc_beacon.server_status import fetch_status_api
 
 __all__ = ["MCBeaconPlugin"]
 
