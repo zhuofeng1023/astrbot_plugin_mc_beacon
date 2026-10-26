@@ -16,6 +16,34 @@
     "type": "bool",
     "default": true
   },
+  "image_enabled": {
+    "description": "启用状态图片生成与发送",
+    "type": "bool",
+    "hint": "图片只在内存中生成，不保存到本地。",
+    "default": true
+  },
+  "image_theme": {
+    "description": "状态图片主题",
+    "type": "string",
+    "hint": "填写 dark 或 light。",
+    "default": "dark"
+  },
+  "image_scale": {
+    "description": "状态图片缩放倍数",
+    "type": "int",
+    "hint": "建议填写 1-3，数值越大图片越清晰、消息体积也越大。",
+    "default": 3
+  },
+  "image_on_query": {
+    "description": "查询时发送状态图片",
+    "type": "bool",
+    "default": true
+  },
+  "image_on_change": {
+    "description": "状态变化通知时发送状态图片",
+    "type": "bool",
+    "default": true
+  },
   "display": {
     "description": "显示内容开关",
     "type": "object",

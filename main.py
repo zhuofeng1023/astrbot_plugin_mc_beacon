@@ -1,8 +1,10 @@
 """插件入口：读取配置、跑监控循环、提供 /查询 指令，状态变化时发纯文本群通知。"""
 
 import asyncio
+import base64
 
 from astrbot.api import AstrBotConfig, logger
+from astrbot.api.message_components import Image, MessageChain, Plain
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 
@@ -22,6 +24,7 @@ from .mc_beacon import (
     safe_bool,
     safe_int,
 )
+from .mc_beacon.renderer import generate_dashboard_image
 
 __all__ = ["MCBeaconPlugin"]
 
@@ -35,6 +38,11 @@ class MCBeaconPlugin(Star):
         self.target_group = parse_target_group(config.get("target_group"))
         self.global_check_interval = max(5, safe_int(config.get("check_interval", 45), 45))
         self.display = load_display_options(config)
+        self.image_enabled = safe_bool(config.get("image_enabled", True), True)
+        self.image_theme = str(config.get("image_theme", "dark") or "dark").strip().lower()
+        self.image_scale = max(1, min(4, safe_int(config.get("image_scale", 3), 3)))
+        self.image_on_query = safe_bool(config.get("image_on_query", True), True)
+        self.image_on_change = safe_bool(config.get("image_on_change", True), True)
         self.servers = load_servers_from_config(config, self.global_check_interval)
         self.server_states = build_initial_states(self.servers)
         self.server_locks = {server.key: asyncio.Lock() for server in self.servers}
@@ -65,6 +73,32 @@ class MCBeaconPlugin(Star):
         status_data = await fetch_status_api(server.status_api_url)
         return compose_server_block(snapshot, status_data, self.display)
 
+    async def _render_server_image(self, server: ServerConfig, snapshot: ServerSnapshot | None) -> bytes | None:
+        if not self.image_enabled or snapshot is None:
+            return None
+        status_data = await fetch_status_api(server.status_api_url)
+        snapshot_data = {
+            "name": snapshot.name,
+            "server_ip": snapshot.server_ip,
+            "server_port": snapshot.server_port,
+            "server_type": snapshot.server_type,
+            "status": snapshot.status,
+            "motd": snapshot.motd,
+            "version": snapshot.version,
+            "online": snapshot.online,
+            "max_players": snapshot.max_players,
+            "players": snapshot.players,
+            "update_time": snapshot.update_time,
+        }
+        return await asyncio.to_thread(
+            generate_dashboard_image,
+            snapshot_data,
+            status_data,
+            self.image_theme,
+            self.image_scale,
+            self.display,
+        )
+
     async def monitor_loop(self):
         try:
             while True:
@@ -89,7 +123,8 @@ class MCBeaconPlugin(Star):
                     logger.info(f"[monitor] [{server.server_name}] 检测到状态变化: {message}")
                     detail = await self._server_detail(server, snapshot)
                     final_message = f"服务器状态变化\n{message}\n\n当前状态\n{detail}"
-                    if not await notify_group(self.context, self.target_group, final_message):
+                    image = await self._render_server_image(server, snapshot) if self.image_on_change else None
+                    if not await notify_group(self.context, self.target_group, final_message, image):
                         logger.error(f"[monitor] [{server.server_name}] 状态变化已识别，但群消息发送失败")
         except asyncio.CancelledError:
             logger.info("监控循环已取消")
@@ -105,8 +140,19 @@ class MCBeaconPlugin(Star):
             return
 
         blocks = []
+        image_sent = False
         for index, server in enumerate(self.servers, start=1):
             snapshot = await self._fetch_server(server, "manual")
             detail = await self._server_detail(server, snapshot)
             blocks.append(f"===== {index}. {server.server_name} =====\n{detail}")
-        yield event.plain_result("\n\n".join(blocks))
+            if self.image_enabled and self.image_on_query and snapshot is not None:
+                image = await self._render_server_image(server, snapshot)
+                if image:
+                    yield MessageChain([
+                        Plain(f"===== {index}. {server.server_name} =====\n{detail}"),
+                        Image.fromBase64(base64.b64encode(image).decode("ascii")),
+                    ])
+                    image_sent = True
+        if not image_sent:
+
+            yield event.plain_result("\n\n".join(blocks))

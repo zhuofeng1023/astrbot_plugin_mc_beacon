@@ -1,6 +1,7 @@
-"""群消息发送：只走 OneBot（AIOCQHTTP）适配器发纯文本。"""
+"""群消息发送：通过 OneBot（AIOCQHTTP）发送文本和内存图片。"""
 
 import asyncio
+import base64
 
 from astrbot.api import logger
 from astrbot.api.event.filter import PlatformAdapterType
@@ -24,7 +25,7 @@ async def _wait_for_client(context):
         await asyncio.sleep(1)
 
 
-async def notify_group(context, target_group: str | None, message: str) -> bool:
+async def notify_group(context, target_group: str | None, message: str, image_bytes: bytes | None = None) -> bool:
     if not target_group:
         logger.error("target_group 未配置，无法发送通知")
         return False
@@ -37,7 +38,10 @@ async def notify_group(context, target_group: str | None, message: str) -> bool:
         result = await client.api.call_action(
             "send_group_msg",
             group_id=int(target_group),
-            message=message,
+            message=(
+                ([{"type": "text", "data": {"text": message}}] if message else [])
+                + ([{"type": "image", "data": {"file": "base64://" + base64.b64encode(image_bytes).decode("ascii")}}] if image_bytes else [])
+            ),
         )
     except Exception as exc:
         logger.error(f"发送群消息异常: {exc}")
