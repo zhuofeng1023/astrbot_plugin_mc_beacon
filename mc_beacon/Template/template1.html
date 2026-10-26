@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ snapshot.get('name', 'Server Dashboard') }}</title>
+    <style>
+        /* ============ 等比缩放机制 ============
+           所有尺寸一律使用 rem（1rem = 设计稿 16px），仅 html 的 font-size 为 px，
+           由渲染端注入 root_size = 16 * scale 实现整图等比例放大（如 scale=3 → 48px）。
+           未传 root_size 时默认 16px，即设计稿 1:1 尺寸。
+           注意：litehtml 不支持 flex 的 gap 属性，元素间距一律用 margin 实现。 */
+        :root {
+            color-scheme: dark;
+            --page: #0b1020;
+            --card: #151d30;
+            --soft: #202b42;
+            --line: rgba(148, 163, 184, .16);
+            --text: #e8eef9;
+            --muted: #9aaac3;
+            --blue: #60a5fa;
+            --green: #34d399;
+            --red: #fb7185;
+            --shadow: 0 .25rem .875rem rgba(0, 0, 0, .18);
+        }
+        /* 亮色主题色值严格对齐设计图（画板 mc-beacon-board）：
+           页面 #F3F6FB / 卡片 #FFFFFF / 描边 #C7D2E3 / 弱化文字 #5A6980 / 主色 #2559C9 */
+        body.theme-light {
+            color-scheme: light;
+            --page: #f3f6fb;
+            --card: #ffffff;
+            --soft: #eef3fa;
+            --line: #c7d2e3;
+            --text: #172338;
+            --muted: #5a6980;
+            --blue: #2559c9;
+            --green: #0eaa79;
+            --red: #e34d67;
+            /* 设计图为扁平描边卡片，无投影 */
+            --shadow: none;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { background: var(--page); font-size: {{ root_size|default(16) }}px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                         "Noto Sans SC", "Microsoft YaHei", sans-serif;
+            background: var(--page);
+            color: var(--text);
+            line-height: 1.4;
+            padding: .625rem;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container { width: 100%; max-width: 30rem; margin: 0 auto; }
+        /* 设计图规格：卡片内边距 16px，卡片间距 20px，圆角 12px */
+        .card {
+            background: var(--card);
+            border: .0625rem solid var(--line);
+            border-radius: .75rem;
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            margin-top: 1.25rem;
+        }
+        .card:first-child { margin-top: 0; }
+
+        /* ============ 卡片1：名称 + 地址高亮 + 徽标 + 公告 ============ */
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .name {
+            font-size: 1rem;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+        /* 设计图规格：徽章 = 卡片底色 + 中性描边 + 状态色文字 */
+        .badge {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            margin-left: .5rem;
+            padding: .1875rem .5625rem;
+            border-radius: 62.5rem;
+            font-size: .75rem;
+            font-weight: 600;
+            line-height: 1.2;
+            background: var(--card);
+            border: .0625rem solid var(--line);
+        }
+        .badge-online { color: var(--green); }
+        .badge-offline { color: var(--red); }
+        /* 设计图规格：地址蓝色高亮，与名称间距 12px */
+        .addr {
+            margin-top: .75rem;
+            color: var(--blue);
+            font-size: .8125rem;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+        .chips { display: flex; flex-wrap: wrap; margin-top: .75rem; }
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            margin: 0 .3125rem .3125rem 0;
+            background: var(--soft);
+            border: .0625rem solid var(--line);
+            border-radius: .375rem;
+            padding: .125rem .4375rem;
+            color: var(--text);
+            font-size: .6875rem;
+            font-weight: 600;
+        }
+        .motd {
+            margin-top: .5rem;
+            padding-top: .5rem;
+            border-top: .0625rem dashed var(--line);
+            color: var(--muted);
+            font-size: .75rem;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        /* ============ 卡片2：玩家 + 性能（每项一行的高密度指标） ============ */
+        /* 设计图规格：指标行间距 12px，进度条高 8px */
+        .m { margin-bottom: .75rem; }
+        .m:last-child { margin-bottom: 0; }
+        .m-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .m-label { color: var(--muted); font-size: .75rem; }
+        .m-value {
+            margin-left: .5rem;
+            font-size: .75rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .m-track {
+            height: .5rem;
+            margin-top: .5rem;
+            background: var(--soft);
+            border-radius: 6.25rem;
+            overflow: hidden;
+        }
+        .m-bar { height: 100%; min-width: 0; border-radius: inherit; }
+        /* 设计图规格：进度条为语义纯色（绿<50 / 黄<80 / 红≥80 / 蓝=玩家） */
+        .bar-green { background: #0eaa79; }
+        .bar-yellow { background: #d99208; }
+        .bar-red { background: #e34d67; }
+        .bar-blue { background: #2559c9; }
+        .players { display: flex; flex-wrap: wrap; margin: .125rem 0 .5625rem; }
+        .player-tag {
+            display: inline-flex;
+            align-items: center;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            margin: 0 .3125rem .3125rem 0;
+            background: var(--soft);
+            color: var(--text);
+            border: .0625rem solid var(--line);
+            border-radius: .375rem;
+            padding: .125rem .4375rem;
+            font-size: .6875rem;
+            font-weight: 600;
+        }
+        .sep { border-top: .0625rem dashed var(--line); margin: 0 0 .75rem; }
+
+        /* ============ 卡片3：status 接口详情，一行一条 key:value ============ */
+        .d-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: .375rem 0;
+        }
+        .d-label { color: var(--muted); font-size: .75rem; flex-shrink: 0; }
+        /* 整行宽度充足，nowrap 不会造成溢出 */
+        .d-value {
+            margin-left: .75rem;
+            font-size: .75rem;
+            font-weight: 600;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        /* 设计图规格：页脚与卡片间距 16px，居中 */
+        .foot {
+            text-align: center;
+            color: var(--muted);
+            font-size: .625rem;
+            margin-top: 1rem;
+            opacity: .8;
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+<body class="theme-{{ theme|default('dark') }}">
+{% set d = display if display else {} %}
+{% set sd = status_data if status_data else {} %}
+{% set fl = FIELD_LABELS if FIELD_LABELS else {} %}
+<div class="container">
+    <!-- ============ 卡片1：顶栏 ============ -->
+    <div class="card">
+        <div class="top-row">
+            {% if d.get('server_name', True) %}
+            <div class="name">{{ snapshot.get('name', 'Unknown Server') }}</div>
+            {% endif %}
+            {% if d.get('status', True) and 'status' in snapshot %}
+                {% set is_online = snapshot.status|string|lower in ['online', 'running', 'true', '1'] %}
+                <span class="badge {{ 'badge-online' if is_online else 'badge-offline' }}">
+                    {{ '● 在线' if is_online else '● 离线' }}
+                </span>
+            {% endif %}
+        </div>
+        {% if d.get('address', True) and (snapshot.get('server_ip') or snapshot.get('server_port')) %}
+        <div class="addr">⌁ {{ snapshot.get('server_ip', '') }}{% if snapshot.get('server_port') %}:{{ snapshot.server_port }}{% endif %}</div>
+        {% endif %}
+        <!-- 游戏版本：status 接口的 gameVersion 优先，回退公开查询的 version -->
+        {% set gver = sd.get('gameVersion') or snapshot.get('version') %}
+        {% set st = snapshot.get('server_type', '')|string|lower %}
+        <div class="chips">
+            {% if d.get('server_type', True) and st %}
+            <span class="chip">{{ 'Java版' if st == 'java' else ('基岩版' if st == 'bedrock' else snapshot.server_type) }}</span>
+            {% endif %}
+            {% if d.get('version', True) and gver %}
+            <span class="chip">{{ gver }}</span>
+            {% endif %}
+        </div>
+        {% if d.get('motd', True) and snapshot.get('motd') %}
+        <div class="motd">{{ snapshot.motd }}</div>
+        {% endif %}
+    </div>
+
+    <!-- ============ 卡片2：玩家 + 系统性能 ============ -->
+    {% set p_count = sd.get('playerCount') if sd.get('playerCount') is not none else (snapshot.get('online') if 'online' in snapshot else none) %}
+    {% set p_max = snapshot.get('max_players') %}
+    {% set p_list = sd.get('playerNames') or (snapshot.get('players') if 'players' in snapshot else none) %}
+    {# 注意：Jinja2 的 for 块内 set 不会带出作用域，这里用 if 串接构建列表 #}
+    {% set perf_items = [] %}
+    {% if 'cpuLoad' in sd and d.get('cpuLoad', True) %}{% set perf_items = perf_items + [('cpuLoad', 'CPU 负载')] %}{% endif %}
+    {% if 'memoryLoad' in sd and d.get('memoryLoad', True) %}{% set perf_items = perf_items + [('memoryLoad', '内存占用')] %}{% endif %}
+    {% if 'diskSpace' in sd and d.get('diskSpace', True) %}{% set perf_items = perf_items + [('diskSpace', '磁盘空间')] %}{% endif %}
+    {% if (p_count is not none and d.get('online_count', True)) or (p_list and d.get('player_list', True)) or perf_items %}
+    <div class="card">
+        {% if p_count is not none and d.get('online_count', True) %}
+            {% if p_max is not none and p_max|float > 0 %}
+                {% set p_percent = [100, [0, (p_count|float / p_max|float * 100)|round]|max]|min %}
+            {% else %}
+                {% set p_percent = 0 %}
+            {% endif %}
+            <div class="m">
+                <div class="m-head">
+                    <span class="m-label">在线玩家</span>
+                    <span class="m-value">{{ p_count }}{% if p_max is not none %}/{{ p_max }}{% endif %}</span>
+                </div>
+                <div class="m-track"><div class="m-bar bar-blue" style="width: {{ p_percent }}%;"></div></div>
+            </div>
+        {% endif %}
+        {% if p_list and d.get('player_list', True) %}
+        <div class="players">
+            {% for player in p_list %}<span class="player-tag">{{ player }}</span>{% endfor %}
+        </div>
+        {% endif %}
+        {% if perf_items %}
+            {% if (p_count is not none and d.get('online_count', True)) or (p_list and d.get('player_list', True)) %}
+            <div class="sep"></div>
+            {% endif %}
+            {% for key, label in perf_items %}
+                {% set val = sd[key]|string|replace('%', '')|float %}
+                {% set safe_val = [100, [0, val]|max]|min %}
+                {% set bar_class = 'bar-green' if val < 50 else ('bar-yellow' if val < 80 else 'bar-red') %}
+                <div class="m">
+                    <div class="m-head">
+                        <span class="m-label">{{ fl.get(key, label) }}</span>
+                        <span class="m-value">{{ val }}%</span>
+                    </div>
+                    <div class="m-track"><div class="m-bar {{ bar_class }}" style="width: {{ safe_val }}%;"></div></div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ============ 卡片3：status 接口详情（仅渲染有值且开启的字段） ============ -->
+    {% set detail_items = [] %}
+    {% if 'serverVersion' in sd and sd.serverVersion|string|trim and d.get('serverVersion', True) %}{% set detail_items = detail_items + [('serverVersion', '服务端版本')] %}{% endif %}
+    {% if 'serverTime' in sd and sd.serverTime|string|trim and d.get('serverTime', True) %}{% set detail_items = detail_items + [('serverTime', '服务器时间')] %}{% endif %}
+    {% if 'lastBackup' in sd and sd.lastBackup|string|trim and d.get('lastBackup', True) %}{% set detail_items = detail_items + [('lastBackup', '上次备份')] %}{% endif %}
+    {% if 'loopCount' in sd and sd.loopCount|string|trim and d.get('loopCount', True) %}{% set detail_items = detail_items + [('loopCount', '循环计数')] %}{% endif %}
+    {% if 'checksum' in sd and sd.checksum|string|trim and d.get('checksum', True) %}{% set detail_items = detail_items + [('checksum', '校验和')] %}{% endif %}
+    {% if detail_items %}
+    <div class="card">
+        {% for key, label in detail_items %}
+        <div class="d-item">
+            <span class="d-label">{{ fl.get(key, label) }}</span>
+            <span class="d-value">{{ sd[key] }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if d.get('update_time', True) and snapshot.get('update_time') %}
+    <div class="foot">更新于 {{ snapshot.update_time }}</div>
+    {% endif %}
+</div>
+</body>
+</html>
