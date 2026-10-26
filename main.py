@@ -4,8 +4,8 @@ import asyncio
 import base64
 
 from astrbot.api import AstrBotConfig, logger
-from astrbot.api.message_components import Image, MessageChain, Plain
-from astrbot.api.event import AstrMessageEvent, filter
+from astrbot.api.message_components import Image, Plain
+from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star, register
 
 from .mc_beacon import (
