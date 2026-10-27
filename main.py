@@ -5,7 +5,7 @@ import base64
 
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.message_components import Image, Plain
-from astrbot.api.event import AstrMessageEvent, MessageChain, filter
+from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 
 from .mc_beacon import (
@@ -152,10 +152,10 @@ class MCBeaconPlugin(Star):
             if self.image_enabled and self.image_on_query and snapshot is not None:
                 image = await self._render_server_image(server, snapshot)
                 if image:
-                    # 文字开关关闭时只发图片
+                    # 文字开关关闭时只发图片；chain_result 才是合法的 yield 返回值
                     segments = [Plain(f"===== {index}. {server.server_name} =====\n{detail}")] if self.text_enabled else []
                     segments.append(Image.fromBase64(base64.b64encode(image).decode("ascii")))
-                    yield MessageChain(segments)
+                    yield event.chain_result(segments)
                     image_sent = True
         if not image_sent:
 
