@@ -244,7 +244,7 @@
     {% set perf_items = [] %}
     {% if 'cpuLoad' in sd and d.get('cpuLoad', True) %}{% set perf_items = perf_items + [('cpuLoad', 'CPU 负载')] %}{% endif %}
     {% if 'memoryLoad' in sd and d.get('memoryLoad', True) %}{% set perf_items = perf_items + [('memoryLoad', '内存占用')] %}{% endif %}
-    {% if 'diskSpace' in sd and d.get('diskSpace', True) %}{% set perf_items = perf_items + [('diskSpace', '磁盘空间')] %}{% endif %}
+
     {% if (p_count is not none and d.get('online_count', True)) or (p_list and d.get('player_list', True)) or perf_items %}
     <div class="card">
         {% if p_count is not none and d.get('online_count', True) %}
@@ -290,6 +290,8 @@
     {% set detail_items = [] %}
     {% if 'serverVersion' in sd and sd.serverVersion|string|trim and d.get('serverVersion', True) %}{% set detail_items = detail_items + [('serverVersion', '服务端版本')] %}{% endif %}
     {% if 'serverTime' in sd and sd.serverTime|string|trim and d.get('serverTime', True) %}{% set detail_items = detail_items + [('serverTime', '服务器时间')] %}{% endif %}
+    {# diskSpace 是 "13G 866M" 这类文本，放详情区而不是进度条区 #}
+    {% if 'diskSpace' in sd and sd.diskSpace|string|trim and d.get('diskSpace', True) %}{% set detail_items = detail_items + [('diskSpace', '磁盘空间')] %}{% endif %}
     {% if 'lastBackup' in sd and sd.lastBackup|string|trim and d.get('lastBackup', True) %}{% set detail_items = detail_items + [('lastBackup', '上次备份')] %}{% endif %}
     {% if 'loopCount' in sd and sd.loopCount|string|trim and d.get('loopCount', True) %}{% set detail_items = detail_items + [('loopCount', '循环计数')] %}{% endif %}
     {% if 'checksum' in sd and sd.checksum|string|trim and d.get('checksum', True) %}{% set detail_items = detail_items + [('checksum', '校验和')] %}{% endif %}

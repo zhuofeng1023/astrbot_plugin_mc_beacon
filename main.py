@@ -38,6 +38,7 @@ class MCBeaconPlugin(Star):
         self.target_group = parse_target_group(config.get("target_group"))
         self.global_check_interval = max(5, safe_int(config.get("check_interval", 45), 45))
         self.display = load_display_options(config)
+        self.text_enabled = safe_bool(config.get("text_enabled", True), True)
         self.image_enabled = safe_bool(config.get("image_enabled", True), True)
         self.image_theme = str(config.get("image_theme", "dark") or "dark").strip().lower()
         self.image_scale = max(1, min(4, safe_int(config.get("image_scale", 3), 3)))
@@ -124,6 +125,9 @@ class MCBeaconPlugin(Star):
                     detail = await self._server_detail(server, snapshot)
                     final_message = f"服务器状态变化\n{message}\n\n当前状态\n{detail}"
                     image = await self._render_server_image(server, snapshot) if self.image_on_change else None
+                    # 文字开关关闭且图片发送成功时，只发图片；图片发送失败则回退发文字
+                    if image and not self.text_enabled:
+                        final_message = ""
                     if not await notify_group(self.context, self.target_group, final_message, image):
                         logger.error(f"[monitor] [{server.server_name}] 状态变化已识别，但群消息发送失败")
         except asyncio.CancelledError:
@@ -148,10 +152,10 @@ class MCBeaconPlugin(Star):
             if self.image_enabled and self.image_on_query and snapshot is not None:
                 image = await self._render_server_image(server, snapshot)
                 if image:
-                    yield MessageChain([
-                        Plain(f"===== {index}. {server.server_name} =====\n{detail}"),
-                        Image.fromBase64(base64.b64encode(image).decode("ascii")),
-                    ])
+                    # 文字开关关闭时只发图片
+                    segments = [Plain(f"===== {index}. {server.server_name} =====\n{detail}")] if self.text_enabled else []
+                    segments.append(Image.fromBase64(base64.b64encode(image).decode("ascii")))
+                    yield MessageChain(segments)
                     image_sent = True
         if not image_sent:
 

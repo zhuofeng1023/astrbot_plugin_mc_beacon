@@ -16,6 +16,12 @@
     "type": "bool",
     "default": true
   },
+  "text_enabled": {
+    "description": "随图片发送文字详情",
+    "type": "bool",
+    "hint": "关闭后图片查询/通知只发图片；若图片发送失败会回退发文字。",
+    "default": true
+  },
   "image_enabled": {
     "description": "启用状态图片生成与发送",
     "type": "bool",
